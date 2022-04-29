@@ -43,29 +43,33 @@ dat2 <- dat %>%
 
 #### data export structure ####
 
-# directory names
-dir_names <- str_replace(species$standardized_name, " ", "-")
-
-# make directory for each species
-sapply(paste0("data/", dir_names), 
-       function(x) if(!dir.exists(x)) {dir.create(x)})
-
 # add directory and file name
 dat3 <- dat2 %>%
-  mutate(filename = paste0("data/",
-                          str_replace(standardized_name, " ", "-"),
+  expand_grid(gsource = c("web", "news", "images", "froogle", "youtube")) %>%
+  mutate(dirname = paste0("data/",
+                          gsource,
                           "/",
-                          str_replace(country_code, " ", "-"),
-                          ".csv"))
+                          str_replace(standardized_name, " ", "-")),
+         filename = paste0(dirname,
+                           "/",
+                           str_replace(country_code, " ", "-"),
+                           ".csv"))
+
+# directory names
+dir_names <- unique(dat3$dirname)
+
+# make directory for each species
+sapply(dir_names, 
+       function(x) if(!dir.exists(x)) {dir.create(x, recursive =  T)})
 
 
 #### five species ####
 
 # gtrends wrapper function
-gtrends_export <- function(standardized_name, country_code, filename, ...){
+gtrends_export <- function(standardized_name, country_code, gsource, filename, ...){
   
   # extract Google trends
-  dat_temp <- gtrends(standardized_name, time = "all", geo = country_code)
+  dat_temp <- gtrends(standardized_name, time = "all", geo = country_code, gprop = gsource)
   
   if(!is.null(dat_temp$interest_over_time)){
     
